@@ -1,0 +1,6 @@
+.vscode/
+test_data/
+obj/*
+QuickBEAST
+out
+output_data/
