@@ -46,7 +46,8 @@ EstimatedMoments estimateMoments(const std::vector<float> &trapezoidAreas,
     const float begin = gridMap.indexToP(i), end = gridMap.indexToP(i + 1);
     const float p = (begin + end) / 2;
 
-    const float x = log(p / (1 - p));
+    // const float x = log(p / (1 - p));
+    const float x = p;
     sumX += x * PofX; // expectation: sum of X*P(X)
     sumXX += x * x * PofX;
 
