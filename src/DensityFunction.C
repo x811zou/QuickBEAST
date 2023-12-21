@@ -21,33 +21,18 @@ DensityFunction::DensityFunction(const std::vector<MatPat> &counts,
   // ctor
 }
 
-float DensityFunction::gradient(float p, float epsilon) const {
-  const float f1 = (*this)(p - epsilon);
-  const float f2 = (*this)(p + epsilon);
-  return (f2 - f1) / (epsilon * 2);
+float DensityFunction::operator()(float p) const {
+  return exp(logLikelihood(p));
 }
 
-float DensityFunction::operator()(float p) const {
+float DensityFunction::logLikelihood(float p) const {
   const int n = counts.size();
-
-  // std::cout << "DensityFunction::operator() p=" << p << std::endl;
 
   // initial
   const int a0 = counts[0].mat, b0 = counts[0].pat;
   std::pair<float, float> mat_pat = std::make_pair(
       log(gsl_ran_beta_pdf(p, alpha, beta)) + logBinomialProb(p, a0, a0 + b0),
       NEGATIVE_INFINITY);
-
-  // if (std::isnan(mat_pat.first) || std::isinf(mat_pat.first)) {
-  //   std::cout << "mat_pat.mat=" << mat_pat.first << std::endl;
-  //   std::cout << "isnan(mat_pat.mat) p=" << p << " a0=" << a0 << " b0=" << b0
-  //             << std::endl;
-  //   std::cout << "alpha=" << alpha << " beta=" << beta << std::endl;
-  //   std::cout << "logBinomialProb=" << logBinomialProb(p, a0, a0 + b0)
-  //             << std::endl;
-  //   std::cout << "beta pdf=" << gsl_ran_beta_pdf(p, alpha, beta) <<
-  //   std::endl; throw std::string("derp");
-  // }
 
   // iterate
   for (int i = 1; i < n; ++i) {
@@ -70,12 +55,7 @@ float DensityFunction::operator()(float p) const {
 
   // compute final result
   const float logDensity = sumLogProbs(mat_pat.first, mat_pat.second);
-  const float result = exp(logDensity);
-
-  // std::cout << "mat=" << mat_pat.first << " pat=" << mat_pat.second
-  //           << " logDensity=" << logDensity << " result=" << result
-  //           << std::endl;
-  return result;
+  return logDensity;
 }
 
 float sumLogProbs(float logP, float logQ) {

@@ -15,8 +15,10 @@ class DensityFunction {
 public:
   DensityFunction(const std::vector<MatPat> &counts,
                   const std::vector<float> &pis, float alpha, float beta);
+
+  float logLikelihood(float p) const;
+
   float operator()(float p) const; // This is *NOT* in log space!
-  float gradient(float p, float epsilon = 1e-6) const;
 
 private:
   const std::vector<MatPat> &counts;

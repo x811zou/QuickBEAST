@@ -12,13 +12,12 @@
 #include "Trapezoids.H"
 #include "cxxopts.hpp"
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <math.h>
 #include <sstream>
 
 using namespace std;
-
-#define XCC
 
 struct Gene {
   std::string name;
@@ -26,15 +25,7 @@ struct Gene {
   std::vector<float> pis;
 };
 
-struct ComputedGeneData {
-  float mean;
-  float var;
-  float mode;
-};
-
 Gene parseGeneFromTextLine(const std::string &line);
-ComputedGeneData computeGeneData(const Gene &gene, float alpha, float beta,
-                                 int numPoints);
 
 class Application {
 public:
@@ -64,15 +55,30 @@ Application::Application() {
 
 int Application::main(int argc, char *argv[]) {
   cxxopts::Options options("QuickBEAST", "DESCRIPTION");
-  options.add_options()("alpha", "Alpha for beta distribution",
-                        cxxopts::value<float>())(
-      "beta", "Beta for beta distribution", cxxopts::value<float>())(
-      "numTrapezoids",
-      "Number of trapezoids for numerical integration.  Must be even",
-      cxxopts::value<int>())("v,verbose", "Verbose output")(
-      "f,file", "Input file",
-      cxxopts::value<std::string>()->default_value(""))("h,help", "Print help");
-  options.parse_positional({"alpha", "beta", "numTrapezoids"});
+  // clang-format off
+  options.add_options()
+  ("alpha", "Alpha for beta distribution", cxxopts::value<float>())
+  ("beta", "Beta for beta distribution", cxxopts::value<float>())
+
+  ("f,file", "Input file, if omitted read from stdin", cxxopts::value<std::string>()->default_value(""))
+
+  ("mode", "Compute mode")
+  ("modeSubgridSize", "mode subgrid computation points", cxxopts::value<int>()->default_value("101"))
+  ("modeSubgridThreshold", "final subgrid width for mode computation", cxxopts::value<float>()->default_value("1e-9"))
+  ("modeSubgridStepSlop", "mode subgrid step slop", cxxopts::value<float>()->default_value("3"))
+
+  ("mean", "Compute mean")
+  ("meanTrapezoids", "Number of trapezoids for mean computation. Must be even", cxxopts::value<int>()->default_value("100"))
+
+  ("distributionLogLikelihood", "Compute distribution log likelihood instead of density")
+  ("distributionFile", "File to optionally store posterior to", cxxopts::value<std::string>()->default_value(""))
+  ("distributionPoints", "Number of points to use for distribution", cxxopts::value<int>()->default_value("10000"))
+
+  ("v,verbose", "Verbose output")
+  ("h,help", "Print help");
+  // clang-format on
+
+  options.parse_positional({"alpha", "beta"});
 
   auto result = options.parse(argc, argv);
 
@@ -83,22 +89,55 @@ int Application::main(int argc, char *argv[]) {
 
   const float alpha = result["alpha"].as<float>();
   const float beta = result["beta"].as<float>();
-  const int numTrapezoids = result["numTrapezoids"].as<int>();
-  std::string inputFile = result["file"].as<std::string>();
+  const std::string inputFile = result["file"].as<std::string>();
+
+  const bool computeMean = result.count("mean") > 0;
+  const int meanTrapezoids = result["meanTrapezoids"].as<int>();
+
+  const bool computeMode = result.count("mode") > 0;
+  const int modeSubgridSize = result["modeSubgridSize"].as<int>();
+  const float modeSubgridThreshold = result["modeSubgridThreshold"].as<float>();
+  const float modeSubgridStepSlop = result["modeSubgridStepSlop"].as<float>();
+
+  const std::string distributionFile =
+      result["distributionFile"].as<std::string>();
+  const bool distributionLogLikelihood =
+      result.count("distributionLogLikelihood") > 0;
+  const int distributionPoints = result["distributionPoints"].as<int>();
+
   bool verbose = result.count("verbose") > 0;
 
-  if (numTrapezoids % 2 != 0) {
-    throw std::string("#trapezoids must be an even number");
+  if (meanTrapezoids % 2 != 0) {
+    std::cerr << "ERROR: meanTrapezoids must be an even number" << std::endl;
+    return 1;
   }
-  const int numPoints = numTrapezoids + 1;
 
   if (verbose) {
     // print parsed args
-    cerr << "alpha=" << alpha << endl;
-    cerr << "beta=" << beta << endl;
-    cerr << "#trapezoids=" << numTrapezoids << endl;
+    cerr << "alpha=" << alpha << '\n';
+    cerr << "beta=" << beta << '\n';
+
+    cerr << "computeMode=" << computeMode << '\n';
+    cerr << "modeSubgridSize=" << modeSubgridSize << '\n';
+    cerr << "modeSubgridThreshold=" << modeSubgridThreshold << '\n';
+    cerr << "modeSubgridStepSlop=" << modeSubgridStepSlop << '\n';
+    cerr << "meanTrapezoids=" << meanTrapezoids << '\n';
+
+    cerr << "computeMean=" << computeMean << '\n';
+    cerr << "distributionPoints=" << distributionPoints << '\n';
+    cerr << "distributionLogLikelihood=" << distributionLogLikelihood << '\n';
     cerr << "inputFile="
-         << "'" << inputFile << "'" << endl;
+         << "'" << inputFile << "'" << '\n';
+    cerr << "distributionFile="
+         << "'" << distributionFile << "'" << '\n';
+  }
+
+  const bool writeOutput = computeMean || computeMode;
+  const bool writeDistribution = !distributionFile.empty();
+
+  if (!writeOutput && !writeDistribution) {
+    std::cerr << "ERROR: No output requested" << std::endl;
+    return 1;
   }
 
   std::istream *input = &std::cin;
@@ -120,31 +159,66 @@ int Application::main(int argc, char *argv[]) {
     }
   }
 
+  std::ofstream distributionFileStream;
+  if (writeDistribution) {
+    if (verbose) {
+      cerr << "Writing distribution to file: " << distributionFile << endl;
+    }
+    distributionFileStream.open(distributionFile.c_str());
+    if (!distributionFileStream.is_open()) {
+      std::cerr << "Failed to open file: " << distributionFile << std::endl;
+      return 1;
+    }
+  }
+
   // print header
-  cout << "gene\tmean\tvar\tmode\n";
+  if (writeOutput) {
+    cout << "gene";
+    if (computeMean) {
+      cout << "\tmean";
+    }
+    if (computeMode) {
+      cout << "\tmode";
+    }
+    cout << "\n";
+
+    // configure float output
+    cout << std::fixed << std::setprecision(12);
+  }
   std::string line;
   while (std::getline(*input, line)) {
     Gene gene = parseGeneFromTextLine(line);
 
-    ComputedGeneData computedData =
-        computeGeneData(gene, alpha, beta, numPoints);
+    DensityFunction f(gene.counts, gene.pis, alpha, beta);
 
-    cout << gene.name << "\t" << computedData.mean << "\t" << computedData.var
-         << "\t" << computedData.mode << endl;
+    if (writeOutput) {
+      std::cout << gene.name;
+
+      if (computeMean) {
+        const float mean = estimateMean({meanTrapezoids}, f);
+        std::cout << "\t" << mean;
+      }
+      if (computeMode) {
+        const float mode = estimateMode(
+            {modeSubgridSize, modeSubgridThreshold, modeSubgridStepSlop}, f);
+        std::cout << "\t" << mode;
+      }
+
+      std::cout << "\n";
+    }
+
+    if (writeDistribution) {
+      distributionFileStream << gene.name << "\t";
+      const auto &&distribution = computeDistribution(
+          {distributionPoints, distributionLogLikelihood}, f);
+      for (const auto &pair : distribution) {
+        distributionFileStream << pair.first << "\t" << pair.second << "\t";
+      }
+      distributionFileStream << "\n";
+    }
   }
 
   return 0;
-}
-
-ComputedGeneData computeGeneData(const Gene &gene, float alpha, float beta,
-                                 int numPoints) {
-  DensityFunction f(gene.counts, gene.pis, alpha, beta);
-  GridMap gridMap(numPoints + 1, 0, 1);
-  const auto &&grid = fillGrid(f, gridMap);
-  const auto &&trapezoidAreas = computeTrapezoidAreas(grid);
-
-  EstimatedMoments moments = estimateMoments(trapezoidAreas, gridMap, f);
-  return {.mean = moments.mean, .var = moments.var, .mode = moments.mode};
 }
 
 Gene parseGeneFromTextLine(const std::string &line) {

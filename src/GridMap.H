@@ -20,6 +20,7 @@ public:
   float getMin() const { return min; }
   float getMax() const { return max; }
   float getRange() const { return max - min; }
+  float getStep() const { return getRange() / (gridSize - 1); }
 
 private:
   const int gridSize;

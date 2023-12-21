@@ -7,19 +7,31 @@
 #ifndef INCL_MomentsEstimator_H
 #define INCL_MomentsEstimator_H
 
+#include <utility>
 #include <vector>
 
-class GridMap;
 class DensityFunction;
 
-struct EstimatedMoments {
-  float mean;
-  float var;
-  float mode;
+struct MeanOptions {
+  int numTrapezoids;
 };
+float estimateMean(const MeanOptions &options,
+                   const DensityFunction &densityFunction);
 
-EstimatedMoments estimateMoments(const std::vector<float> &trapezoidAreas,
-                                 const GridMap &gridMap,
-                                 const DensityFunction &densityFunction);
+struct ModeOptions {
+  int subgridSize;
+  float subgridThreshold;
+  float subgridStepSlop;
+};
+float estimateMode(const ModeOptions &options,
+                   const DensityFunction &densityFunction);
+
+struct DistributionOptions {
+  int numSamples;
+  bool useLogLikelihood;
+};
+std::vector<std::pair<float, float>>
+computeDistribution(const DistributionOptions &options,
+                    const DensityFunction &densityFunction);
 
 #endif

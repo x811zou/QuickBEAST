@@ -7,88 +7,84 @@
 #include "MomentsEstimator.H"
 
 #include "DensityFunction.H"
+#include "DensityGrid.H"
 #include "GridMap.H"
+#include "Trapezoids.H"
 #include <algorithm>
+#include <iomanip>
 #include <iostream>
 #include <math.h>
 #include <numeric>
 
-EstimatedMoments estimateMoments(const std::vector<float> &trapezoidAreas,
-                                 const GridMap &gridMap,
-                                 const DensityFunction &densityFunction) {
+float estimateMean(const MeanOptions &options,
+                   const DensityFunction &densityFunction) {
+  GridMap gridMap(options.numTrapezoids + 1, 0, 1);
+  const auto &&grid = fillGrid(densityFunction, gridMap);
+  const auto &&trapezoidAreas = computeTrapezoidAreas(grid);
+
   const int numTrap = trapezoidAreas.size();
   const float totalArea =
       std::accumulate(trapezoidAreas.begin(), trapezoidAreas.end(), 0.0f);
   const float partition = totalArea;
 
   if (totalArea == 0) {
-    return {
-        .mean = 0,
-        .var = 0,
-        .mode = 0,
-    };
+    return 0;
   }
 
-  // print trapezoids areas 20 to line
-  // std::cout << "trapezoidAreas=\n";
-  // for (int i = 0; i < numTrap; ++i) {
-  //   std::cout << trapezoidAreas[i] << " ";
-  //   if (i % 20 == 19) {
-  //     std::cout << "\n";
-  //   }
-  // }
-
-  // std::cout << "totalArea=" << totalArea << "\n";
-
-  float sumX = 0, sumXX = 0, maxTrapI = 0, maxArea = -HUGE_VAL;
+  float sumX = 0;
   for (int i = 0; i < numTrap; ++i) {
     const float PofX = trapezoidAreas[i] / partition;
     const float begin = gridMap.indexToP(i), end = gridMap.indexToP(i + 1);
     const float p = (begin + end) / 2;
 
-    // const float x = log(p / (1 - p));
     const float x = p;
     sumX += x * PofX; // expectation: sum of X*P(X)
-    sumXX += x * x * PofX;
-
-    if (trapezoidAreas[i] > maxArea) {
-      maxArea = trapezoidAreas[i];
-      maxTrapI = i;
-    }
   }
 
-  const float WIDTH_THRESHOLD = 0.000000001;
-  float modeP =
-      (gridMap.indexToP(maxTrapI) + gridMap.indexToP(maxTrapI + 1)) / 2;
-  float width = gridMap.indexToP(maxTrapI + 1) - gridMap.indexToP(maxTrapI);
-  while (width > WIDTH_THRESHOLD) {
-    // std::cout << "modeP=" << modeP << " width=" << width << "\n";
-    const float leftP = modeP - width / 4;
-    const float rightP = modeP + width / 4;
+  return sumX;
+}
 
-    const float centerVal = densityFunction(modeP);
-    const float leftVal = densityFunction(leftP);
-    const float rightVal = densityFunction(rightP);
+float estimateMode(const ModeOptions &options,
+                   const DensityFunction &densityFunction) {
+  float startP = 0, endP = 1;
+  float mode = 0;
+  float maxDensity = 0;
+  while (endP - startP > options.subgridThreshold) {
+    GridMap subgrid(options.subgridSize, startP, endP);
+    mode = subgrid.indexToP(options.subgridSize / 2);
+    maxDensity = densityFunction.logLikelihood(mode);
 
-    if (centerVal > leftVal && centerVal > rightVal) {
-      // modeP is unchanged
-    } else if (leftVal > rightVal) {
-      modeP = leftP;
+    for (int i = 0; i < subgrid.getGridSize(); ++i) {
+      const float p = subgrid.indexToP(i);
+      const float density = densityFunction.logLikelihood(p);
+      if (density > maxDensity) {
+        maxDensity = density;
+        mode = p;
+      }
+    }
+
+    const float nextHalfWidth = subgrid.getStep() * options.subgridStepSlop;
+    startP = mode - nextHalfWidth;
+    endP = mode + nextHalfWidth;
+  }
+
+  return mode;
+}
+
+std::vector<std::pair<float, float>>
+computeDistribution(const DistributionOptions &options,
+                    const DensityFunction &densityFunction) {
+  std::vector<std::pair<float, float>> distribution;
+  distribution.reserve(options.numSamples);
+
+  GridMap gridMap(options.numSamples, 0, 1);
+  for (int i = 0; i < options.numSamples; ++i) {
+    const float p = gridMap.indexToP(i);
+    if (options.useLogLikelihood) {
+      distribution.emplace_back(p, densityFunction.logLikelihood(p));
     } else {
-      modeP = rightP;
+      distribution.emplace_back(p, densityFunction(p));
     }
-    width /= 2;
   }
-  const float modeX = modeP; // log(modeP / (1 - modeP));
-
-  // std::cout << "sumX=" << sumX << "\n";
-  // std::cout << "sumXX=" << sumXX << "\n";
-  EstimatedMoments moments;
-  // Mean = E[X]
-  moments.mean = sumX;
-  // Variance = E[X^2]=E[X]^2
-  moments.var = sumXX - sumX * sumX;
-  moments.mode = modeX;
-
-  return moments;
+  return distribution;
 }
