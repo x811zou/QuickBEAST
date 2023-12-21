@@ -2,5 +2,6 @@
 test_data/
 obj/*
 QuickBEAST
-out
+out*
 output_data/
+*.py
