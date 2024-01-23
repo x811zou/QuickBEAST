@@ -1,11 +1,11 @@
-# QuickBEAST: A comprehensive Tool for Estimating ASE Effect Size
+## QuickBEAST: A comprehensive Tool for Estimating ASE Effect Size
 
-### QuickBEAST: A Comprehensive Tool for Estimating ASE Effect Size
+#### QuickBEAST: A Comprehensive Tool for Estimating ASE Effect Size
 
-#### Overview:
+##### Overview:
 QuickBEAST is an open-source software tool designed for the precise estimation of allele-specific expression (ASE) effect size (θ) from gene data. The software employs advanced statistical methods to analyze allele counts, accounting for nuances such as switching error rates and heterogeneity in read counts.
 
-#### Key Features:
+##### Key Features:
 
 Robust Statistical Framework: At its core, QuickBEAST utilizes a DensityFunction class to model the density of allele frequencies, offering functionalities to compute log-likelihoods and evaluate density functions.
 Precise Estimations: The MomentsEstimator module extends the capabilities by providing accurate estimations of mean, variance, and mode, crucial for interpreting ASE effect sizes.
@@ -14,12 +14,11 @@ User-Friendly Command-Line Interface: QuickBEAST is accessible via a command-lin
 Methodology:
 QuickBEAST performs an in-depth statistical analysis to estimate the binomial proportion p representing the ASE. The main output, qb_mode, is the mode of p estimated through a subgrid search algorithm, ensuring precision in identifying the most likely allele frequency. Subsequently, we can compute the ASE effect size (θ) downstream using the relation θ = p/(1-p), offering a clear quantification of the expression bias between alleles.
 
-#### Usage:
+##### Usage:
 The software is designed with flexibility in mind, allowing users to specify various options such as the alpha and beta parameters for the beta distribution, the choice of output (mean, variance, mode), and the ability to fix the site with the largest number of heterozygous reads, among others.
 
-#### Conclusion:
+##### Conclusion:
 QuickBEAST stands out for its robust statistical foundation, precision in computation, and user-centric design. It is a powerful tool for researchers and geneticists aiming to unravel the complexities of allele-specific expression and its implications in genomic studies.
 
-
-#### Acknowledgements:
+##### Acknowledgements:
 The initial version of QuickBEAST was developed by William H. Majoros, whose foundational work and dedication laid the groundwork for this robust tool. The current version, which includes enhancements and modifications, is a result of forking and building upon Bill's original code. I extend my sincerest gratitude to Bill Majoros for his significant contributions and for setting the high standard that QuickBEAST continues to uphold. This software is released under the GNU General Public License version 3. For further information, inquiries, or contributions, please contact [William H. Majoros](mailto:bmajoros@alumni.duke.edu).
