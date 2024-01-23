@@ -12,7 +12,7 @@ Precise Estimations: The MomentsEstimator module extends the capabilities by pro
 Advanced Numerical Methods: Implements trapezoidal integration (via the Trapezoids module) and efficient log-binomial probability calculations (through the LogBinomial module), ensuring high precision in numerical computations.
 User-Friendly Command-Line Interface: QuickBEAST is accessible via a command-line interface, offering various parameters for detailed configuration and analysis. It supports input from files or standard input, and provides verbose output and file writing options for the results.
 Methodology:
-QuickBEAST performs an in-depth statistical analysis to estimate the binomial proportion p representing the ASE. The main output, qb_mode, is the mode of p estimated through a subgrid search algorithm, ensuring precision in identifying the most likely allele frequency. Subsequently, QuickBEAST computes the ASE effect size (θ) using the relation θ = p/(1-p), offering a clear quantification of the expression bias between alleles.
+QuickBEAST performs an in-depth statistical analysis to estimate the binomial proportion p representing the ASE. The main output, qb_mode, is the mode of p estimated through a subgrid search algorithm, ensuring precision in identifying the most likely allele frequency. Subsequently, we can compute the ASE effect size (θ) downstream using the relation θ = p/(1-p), offering a clear quantification of the expression bias between alleles.
 
 #### Usage:
 The software is designed with flexibility in mind, allowing users to specify various options such as the alpha and beta parameters for the beta distribution, the choice of output (mean, variance, mode), and the ability to fix the site with the largest number of heterozygous reads, among others.
@@ -22,4 +22,4 @@ QuickBEAST stands out for its robust statistical foundation, precision in comput
 
 
 #### Acknowledgements:
-QuickBEAST is maintained by William H. Majoros and is released under the GNU General Public License version 3. For further information, inquiries, or contributions, please contact William H. Majoros.
+The initial version of QuickBEAST was developed by William H. Majoros, whose foundational work and dedication laid the groundwork for this robust tool. The current version, which includes enhancements and modifications, is a result of forking and building upon Bill's original code. I extend my sincerest gratitude to Bill Majoros for his significant contributions and for setting the high standard that QuickBEAST continues to uphold. This software is released under the GNU General Public License version 3. For further information, inquiries, or contributions, please contact [William H. Majoros](mailto:bmajoros@alumni.duke.edu).
