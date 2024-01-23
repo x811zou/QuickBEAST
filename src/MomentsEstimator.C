@@ -16,8 +16,9 @@
 #include <math.h>
 #include <numeric>
 
-float estimateMean(const MeanOptions &options,
-                   const DensityFunction &densityFunction) {
+MeanAndVariance
+estimateMeanAndVariance(const MeanOptions &options,
+                        const DensityFunction &densityFunction) {
   GridMap gridMap(options.numTrapezoids + 1, 0, 1);
   const auto &&grid = fillGrid(densityFunction, gridMap);
   const auto &&trapezoidAreas = computeTrapezoidAreas(grid);
@@ -28,20 +29,25 @@ float estimateMean(const MeanOptions &options,
   const float partition = totalArea;
 
   if (totalArea == 0) {
-    return 0;
+    return {};
   }
 
   float sumX = 0;
+  float sumXX = 0;
   for (int i = 0; i < numTrap; ++i) {
     const float PofX = trapezoidAreas[i] / partition;
     const float begin = gridMap.indexToP(i), end = gridMap.indexToP(i + 1);
     const float p = (begin + end) / 2;
 
     const float x = p;
-    sumX += x * PofX; // expectation: sum of X*P(X)
+    sumX += x * PofX;      // expectation: sum of X*P(X)
+    sumXX += x * x * PofX; // expectation: sum of X^2*P(X)
   }
 
-  return sumX;
+  const float mean = sumX;
+  const float variance = sumXX - sumX * sumX;
+
+  return {mean, variance};
 }
 
 float estimateMode(const ModeOptions &options,
@@ -51,7 +57,7 @@ float estimateMode(const ModeOptions &options,
   float maxDensity = 0;
   while (endP - startP > options.subgridThreshold) {
     GridMap subgrid(options.subgridSize, startP, endP);
-    mode = subgrid.indexToP(options.subgridSize / 2);
+    mode = (startP + endP) / 2;
     maxDensity = densityFunction.logLikelihood(mode);
 
     for (int i = 0; i < subgrid.getGridSize(); ++i) {

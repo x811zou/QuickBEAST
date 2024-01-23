@@ -57,28 +57,28 @@ int Application::main(int argc, char *argv[]) {
   cxxopts::Options options("QuickBEAST", "DESCRIPTION");
   // clang-format off
   options.add_options()
-  ("alpha", "Alpha for beta distribution", cxxopts::value<float>())
-  ("beta", "Beta for beta distribution", cxxopts::value<float>())
+  ("alpha", "Alpha for beta distribution", cxxopts::value<float>()->default_value("8.789625"))
+  ("beta", "Beta for beta distribution", cxxopts::value<float>()->default_value("8.789625"))
 
   ("f,file", "Input file, if omitted read from stdin", cxxopts::value<std::string>()->default_value(""))
 
   ("mode", "Compute mode")
-  ("modeSubgridSize", "mode subgrid computation points", cxxopts::value<int>()->default_value("101"))
-  ("modeSubgridThreshold", "final subgrid width for mode computation", cxxopts::value<float>()->default_value("1e-9"))
+  ("modeSubgridSize", "mode subgrid computation points", cxxopts::value<int>()->default_value("51"))
+  ("modeSubgridThreshold", "final subgrid width for mode computation", cxxopts::value<float>()->default_value("1e-3"))
   ("modeSubgridStepSlop", "mode subgrid step slop", cxxopts::value<float>()->default_value("3"))
 
-  ("mean", "Compute mean")
+  ("mean", "Compute mean and variance")
   ("meanTrapezoids", "Number of trapezoids for mean computation. Must be even", cxxopts::value<int>()->default_value("100"))
 
-  ("distributionLogLikelihood", "Compute distribution log likelihood instead of density")
+  ("fixMaxHetSite", "Fix the site with the largest number of heterozygous reads")
+
   ("distributionFile", "File to optionally store posterior to", cxxopts::value<std::string>()->default_value(""))
+  ("distributionLogLikelihood", "Compute distribution log likelihood instead of density")
   ("distributionPoints", "Number of points to use for distribution", cxxopts::value<int>()->default_value("10000"))
 
   ("v,verbose", "Verbose output")
   ("h,help", "Print help");
   // clang-format on
-
-  options.parse_positional({"alpha", "beta"});
 
   auto result = options.parse(argc, argv);
 
@@ -91,13 +91,15 @@ int Application::main(int argc, char *argv[]) {
   const float beta = result["beta"].as<float>();
   const std::string inputFile = result["file"].as<std::string>();
 
-  const bool computeMean = result.count("mean") > 0;
+  const bool computeMeanAndVariance = result.count("mean") > 0;
   const int meanTrapezoids = result["meanTrapezoids"].as<int>();
 
   const bool computeMode = result.count("mode") > 0;
   const int modeSubgridSize = result["modeSubgridSize"].as<int>();
   const float modeSubgridThreshold = result["modeSubgridThreshold"].as<float>();
   const float modeSubgridStepSlop = result["modeSubgridStepSlop"].as<float>();
+
+  const bool fixMaxHetSite = result.count("fixMaxHetSite") > 0;
 
   const std::string distributionFile =
       result["distributionFile"].as<std::string>();
@@ -123,7 +125,7 @@ int Application::main(int argc, char *argv[]) {
     cerr << "modeSubgridStepSlop=" << modeSubgridStepSlop << '\n';
     cerr << "meanTrapezoids=" << meanTrapezoids << '\n';
 
-    cerr << "computeMean=" << computeMean << '\n';
+    cerr << "computeMean=" << computeMeanAndVariance << '\n';
     cerr << "distributionPoints=" << distributionPoints << '\n';
     cerr << "distributionLogLikelihood=" << distributionLogLikelihood << '\n';
     cerr << "inputFile="
@@ -132,7 +134,7 @@ int Application::main(int argc, char *argv[]) {
          << "'" << distributionFile << "'" << '\n';
   }
 
-  const bool writeOutput = computeMean || computeMode;
+  const bool writeOutput = computeMeanAndVariance || computeMode;
   const bool writeDistribution = !distributionFile.empty();
 
   if (!writeOutput && !writeDistribution) {
@@ -174,8 +176,8 @@ int Application::main(int argc, char *argv[]) {
   // print header
   if (writeOutput) {
     cout << "gene";
-    if (computeMean) {
-      cout << "\tmean";
+    if (computeMeanAndVariance) {
+      cout << "\tmean\tvariance";
     }
     if (computeMode) {
       cout << "\tmode";
@@ -189,14 +191,16 @@ int Application::main(int argc, char *argv[]) {
   while (std::getline(*input, line)) {
     Gene gene = parseGeneFromTextLine(line);
 
-    DensityFunction f(gene.counts, gene.pis, alpha, beta);
+    DensityFunction f(gene.counts, gene.pis, alpha, beta, fixMaxHetSite);
 
     if (writeOutput) {
       std::cout << gene.name;
 
-      if (computeMean) {
-        const float mean = estimateMean({meanTrapezoids}, f);
-        std::cout << "\t" << mean;
+      if (computeMeanAndVariance) {
+        const auto &meanAndVariance =
+            estimateMeanAndVariance({meanTrapezoids}, f);
+        std::cout << "\t" << meanAndVariance.mean << "\t"
+                  << meanAndVariance.variance;
       }
       if (computeMode) {
         const float mode = estimateMode(

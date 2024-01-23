@@ -16,9 +16,58 @@ float sumLogProbs(float logP, float logQ);
 
 DensityFunction::DensityFunction(const std::vector<MatPat> &counts,
                                  const std::vector<float> &pis, float alpha,
-                                 float beta)
-    : counts(counts), pis(pis), alpha(alpha), beta(beta) {
-  // ctor
+                                 float beta, bool fixMaxHetSite)
+    : counts(counts), pis(pis), alpha(alpha), beta(beta), fixedSiteIndex(0) {
+
+  const int n = counts.size();
+
+  if (fixMaxHetSite) {
+    // find largest het count
+    int maxHetCount = 0;
+    int maxHetIndex = -1;
+    for (int i = 0; i < n; ++i) {
+      const int hetCount = counts[i].mat + counts[i].pat;
+      if (hetCount > maxHetCount) {
+        maxHetCount = hetCount;
+        maxHetIndex = i;
+      }
+    }
+    // fix largest read count
+    fixedSiteIndex = maxHetIndex;
+  }
+
+  // precompute iteration indices
+  // start with the fixed site, then go left to right to the right side
+  // then finish right to left with the left side
+  // a b c d e f
+  // fix c => c | d e f | c b a
+  for (int j = 1; j < n; ++j) {
+    int i, piI;
+    // right side first
+    if (j < (n - fixedSiteIndex)) {
+      i = fixedSiteIndex + j;
+      piI = i - 1;
+    } else {
+      // left side reverse
+      i = fixedSiteIndex - (j - (n - fixedSiteIndex)) - 1;
+      piI = i;
+    }
+    i_piI_pairs.push_back({i, piI});
+  }
+
+  // std::cerr << "fixedSiteIndex=" << fixedSiteIndex << " n=" << n << '\n';
+  // for (int i = 0; i < i_piI_pairs.size(); ++i) {
+  //   std::cerr << "i=" << i_piI_pairs[i].first
+  //             << " piI=" << i_piI_pairs[i].second << '\n';
+  // }
+
+  // precompute log(pi) and log(1-pi)
+  for (int i = 0; i < pis.size(); ++i) {
+    const float pi = pis[i];
+    const float logPi = log(pi);
+    const float logOneMinusPi = log(1 - pi);
+    logPi_logOneMinusPi_pairs.push_back({logPi, logOneMinusPi});
+  }
 }
 
 float DensityFunction::operator()(float p) const {
@@ -29,32 +78,35 @@ float DensityFunction::logLikelihood(float p) const {
   const int n = counts.size();
 
   // initial
-  const int a0 = counts[0].mat, b0 = counts[0].pat;
-  std::pair<float, float> mat_pat = std::make_pair(
-      log(gsl_ran_beta_pdf(p, alpha, beta)) + logBinomialProb(p, a0, a0 + b0),
-      NEGATIVE_INFINITY);
+  const int a0 = counts[fixedSiteIndex].mat, b0 = counts[fixedSiteIndex].pat;
+  float even =
+      log(gsl_ran_beta_pdf(p, alpha, beta)) + logBinomialProb(p, a0, a0 + b0);
+  float odd = NEGATIVE_INFINITY;
 
   // iterate
-  for (int i = 1; i < n; ++i) {
+  for (int j = 0; j < i_piI_pairs.size(); ++j) {
+    const int i = i_piI_pairs[j].first, piI = i_piI_pairs[j].second;
     const int ai = counts[i].mat, bi = counts[i].pat;
-    const float pi = pis[i - 1];
+    const float logPi = logPi_logOneMinusPi_pairs[piI].first;
+    const float logOneMinusPi = logPi_logOneMinusPi_pairs[piI].second;
+
     const float logBinA = logBinomialProb(p, ai, ai + bi);
     const float logBinB = logBinomialProb(p, bi, ai + bi);
-    float logPi = log(pi), logOneMinusPi = log(1 - pi);
 
     // std::cout << "i=" << i << " mat=" << mat_pat.first
     //           << " pat=" << mat_pat.second << " logBinA=" << logBinA
     //           << " logBinB=" << logBinB << std::endl;
 
-    mat_pat =
-        std::make_pair(sumLogProbs(mat_pat.first + logOneMinusPi + logBinA,
-                                   mat_pat.second + logPi + logBinA),
-                       sumLogProbs(mat_pat.first + logPi + logBinB,
-                                   mat_pat.second + logOneMinusPi + logBinB));
+    const float nextEven =
+        sumLogProbs(even + logOneMinusPi + logBinA, odd + logPi + logBinA);
+    const float nextOdd =
+        sumLogProbs(even + logPi + logBinB, odd + logOneMinusPi + logBinB);
+    even = nextEven;
+    odd = nextOdd;
   }
 
   // compute final result
-  const float logDensity = sumLogProbs(mat_pat.first, mat_pat.second);
+  const float logDensity = sumLogProbs(even, odd);
   return logDensity;
 }
 

@@ -15,8 +15,12 @@ class DensityFunction;
 struct MeanOptions {
   int numTrapezoids;
 };
-float estimateMean(const MeanOptions &options,
-                   const DensityFunction &densityFunction);
+struct MeanAndVariance {
+  float mean;
+  float variance;
+};
+MeanAndVariance estimateMeanAndVariance(const MeanOptions &options,
+                                        const DensityFunction &densityFunction);
 
 struct ModeOptions {
   int subgridSize;
