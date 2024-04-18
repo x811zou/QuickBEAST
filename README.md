@@ -4,6 +4,11 @@
 QuickBEAST performs an in-depth statistical analysis to estimate the binomial proportion p representing the ASE. It leverages advanced statistical methods to analyze allele counts and addresses complications like switching error rates and read count heterogeneity. The main output, "qb_mode", is the mode of p estimated through a subgrid search algorithm, ensuring precision in identifying the most likely allele frequency. Subsequently, we can compute the ASE effect size (θ) downstream using the relation θ = p/(1-p), offering a clear quantification of the expression bias between alleles.
 
 ### Usage:
+##### git clone QuickBEAST
+```
+git clone 
+```
+##### run python script 
 ```
 python ./calculate_p_value_from_qb_mode.py --disable-cache $input_file $output_file
 ```
