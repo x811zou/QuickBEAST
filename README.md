@@ -8,6 +8,19 @@ QuickBEAST employs the same statistical model as [BEASTIE](https://github.com/x8
 place holder
 ```
 
+### input format
+- Format: The data is presented in a tab-delimited text file without headers.
+- Fields:
+-- geneID: Identifier for the gene.
+-- #hetX: Level of heterozygosity (X denotes the number of heterozygous sites).
+-- ALTn_allele_count and REFn_allele_count: Allele counts at the nth heterozygous site.
+-- pi(n-1): n−1 π values, where each π is a switching error parameter for each SNP pair.
+```
+geneID 1 ALT1_allele_count REF1_allele_count
+geneID 2 ALT1_allele_count REF1_allele_count ALT2_allele_count REF2_allele_count pi
+geneID 3 ALT1_allele_count REF1_allele_count ALT2_allele_count REF3_allele_count ALT3_allele_count REF2_allele_count pi1 pi2
+```
+
 ### Usage:
 ##### run python wrapper script with test data to obtain p values
 ```
