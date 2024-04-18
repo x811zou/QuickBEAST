@@ -29,4 +29,4 @@ Please cite this paper when using QuickBEAST for your publications.
 ```
 
 ### Acknowledgements:
-The initial version of QuickBEAST was developed by Bill (William H. Majoros). The current version has been enhanced and modified by myself, building upon Bill's original foundational work. We thank Bill for setting the high standards that continue to guide this project. For further information, inquiries, or contributions, please feel free to contact us: [Xue Zou](mailto:xz195@duke.edu), [William H. Majoros](mailto:bmajoros@alumni.duke.edu).
+The initial version of QuickBEAST was developed by Bill (William H. Majoros). The current version has been enhanced and modified by myself, building upon Bill's original foundational work. We thank Bill for setting the high standards that continue to guide this project. For further information, inquiries, or contributions, please feel free to contact [Xue Zou](mailto:xz195@duke.edu).
