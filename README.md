@@ -12,7 +12,7 @@ place holder
 - Format: The data is presented in a tab-delimited text file without headers.
 - Fields:
   - geneID: Identifier for the gene.
-  - #hetX: Level of heterozygosity (X denotes the number of heterozygous sites).
+  - #hetX: X denotes the number of heterozygous sites.
   - ALTn_allele_count and REFn_allele_count: Allele counts at the nth heterozygous site.
   - pi(n-1): n−1 π values, where each π is a switching error parameter for each SNP pair.
 ```
