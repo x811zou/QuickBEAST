@@ -15,7 +15,7 @@ in_file = test_data/bimodal_genes
 out_qb_p_file = test_data/bimodal_genes_qb_p
 python ./calculate_p_value_from_qb_mode.py --disable-cache $in_file $out_qb_p_file
 ```
-##### run QuickBEAST directly to obtain qb estimates
+##### run QuickBEAST directly with test data to obtain qb estimates
 ```
 in_file = test_data/bimodal_genes
 out_qb_file = test_data/bimodal_genes_qb
