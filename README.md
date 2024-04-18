@@ -25,13 +25,13 @@ geneID 3 ALT1_allele_count REF1_allele_count ALT2_allele_count REF3_allele_count
 ##### run python wrapper script with test data to obtain p values
 ```
 in_file = test_data/bimodal_genes
-out_qb_p_file = test_data/bimodal_genes_qb_p
+out_qb_p_file = bimodal_genes_qb_p
 python ./calculate_p_value_from_qb_mode.py --disable-cache $in_file $out_qb_p_file
 ```
 ##### run QuickBEAST directly with test data to obtain qb estimates
 ```
 in_file = test_data/bimodal_genes
-out_qb_file = test_data/bimodal_genes_qb
+out_qb_file = bimodal_genes_qb
 ./QuickBEAST --alpha 8.789625 --beta 8.789625 --mean --mode -f $in_file --fixMaxHetSite > $out_qb_file
 ```
 
