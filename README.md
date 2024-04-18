@@ -6,7 +6,8 @@ QuickBEAST performs an in-depth statistical analysis to estimate the binomial pr
 ### Usage:
 ##### git clone QuickBEAST
 ```
-git clone 
+git clone git@github.com:x811zou/QuickBEAST.git
+cd QuickBEAST/
 ```
 ##### run python script 
 ```
