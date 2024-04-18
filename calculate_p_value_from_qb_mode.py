@@ -180,8 +180,6 @@ def manual_fitting(number_of_hets,average_read_depth_per_het,e,values):
         
 def simulate_null_genes_helper(args):
     geneID, num_hets, total_count = args
-    #print(f">>>>> geneID: {geneID}, num_hets: {num_hets}, total_count: {total_count}")
-    # n_loc, n_scale, t_df, t_loc, t_scale, st_df, st_loc, st_scale = simulate_null_genes(num_hets, int(total_count / num_hets))
     n_hets, total_readepth, st_df, st_loc, st_scale, mode_fitting_para, st_df_mean, st_loc_mean, st_scale_mean, mean_fitting_para = simulate_null_genes(num_hets, int(total_count / num_hets))
     return geneID, n_hets, total_readepth, st_df, st_loc, st_scale, mode_fitting_para, st_df_mean, st_loc_mean, st_scale_mean, mean_fitting_para
 
@@ -210,12 +208,9 @@ def run_null_simulations(input_genes, disable_cache):
 
     for r in all_runs:
         key = cache_key(r)
-        # n_loc, n_scale, t_df, t_loc, t_scale, st_df, st_loc, st_scale = null_simulation_cache[key]
-        # null_simulation_data.append((r[0], n_loc, n_scale, t_df, t_loc, t_scale, st_df, st_loc, st_scale))
         n_hets, total_readepth, st_df, st_loc, st_scale, mode_fit_para, st_df_mean, st_loc_mean, st_scale_mean, mean_fit_para = null_simulation_cache[key]
         null_simulation_data.append((r[0], n_hets, total_readepth, st_df, st_loc, st_scale, mode_fit_para, st_df_mean, st_loc_mean, st_scale_mean, mean_fit_para))
 
-    # null_simulation_df = pd.DataFrame(null_simulation_data, columns=['geneID', 'n_loc' ,'n_scale','t_df' ,'t_loc' ,'t_scale','st_df' ,'st_loc' ,'st_scale'])
     null_simulation_df = pd.DataFrame(null_simulation_data, columns=['geneID', 'n_hets', 'total_count', 'st_df' ,'st_loc' ,'st_scale', 'mode_st_parameter_fit', 'st_df_mean' ,'st_loc_mean' ,'st_scale_mean','mean_st_parameter_fit'])
 
     simulation_end_t = time.time()
@@ -224,13 +219,10 @@ def run_null_simulations(input_genes, disable_cache):
     return null_simulation_df
 
 def main():
-    # program arguments
-    # execute: python /home/scarlett/github/QuickBEAST/calculate_p_value_from_qb_mode.py test_data/MA1 test_data/qb_MA1 --disable-cache --fix-phasing-error #--disable-null-simulation
-    # parse using argparse
     argparser = argparse.ArgumentParser()
     argparser.add_argument("input_file_path", help="Input file path")
     argparser.add_argument("output_file_path", help="Output file path")
-    argparser.add_argument("-- ", help="Disable caching of null simulations", action="store_true", default=False)
+    argparser.add_argument("--disable-cache", help="Disable caching of null simulations", action="store_true", default=False)
     argparser.add_argument("--disable-null-simulation", help="Disable null simulations", action="store_true", default=False)
     argparser.add_argument("--fix-phasing-error", help="fix phasing error to 5%", action="store_true", default=False)
     args = argparser.parse_args()
@@ -247,6 +239,7 @@ def main():
     with open(input_file_path) as file:
         for line in file.readlines():
             fields = line.strip().split("\t")
+
             gene_id = format_geneID(fields[0])
             n_hets = int(fields[1])
             counts = map(int, fields[2:(n_hets*2+2)])
@@ -255,12 +248,14 @@ def main():
             pis = []
             if n_hets > 1:
                 #unused = fields[n_hets*2+2]
-                pis = map(float, fields[n_hets*2+2 + 1:])
+                #pis = map(float, fields[n_hets*2+2 + 1:])
+                pis = map(float, fields[n_hets*2+2 + 0:])
                 if len(fields) == n_hets*2+2:
                     # generate pis for gene input
                     pis = uniform(0.05, 0.05, n_hets-1)
             
             pis = map(lambda x: 0.05 if x == -1 else x, pis)
+
             if fix_phasing_error:
                 pis = map(lambda x: 0.05, pis)
 
@@ -270,7 +265,6 @@ def main():
                 *counts,
                 *pis
             ]
-            print(gene)
             input_genes.append(gene)
 
     logging.info(f"Going to run quickbeast on {len(input_genes)} genes")
@@ -282,16 +276,11 @@ def main():
     # step2: NULL simulation
     if not disable_null_simulation:
         null_simulation_df = run_null_simulations(input_genes, disable_cache)
-
-        #print(null_simulation_df)
         gene_df = pd.merge(gene_df, null_simulation_df, on="geneID")
 
-        #gene_df['normal_p_value'] = gene_df.apply(lambda row: calculate_norm_2sided_pvalue(row['n_loc'], row['n_scale'], row['qb_mean']), axis=1)
-        #gene_df['t_p_value'] = gene_df.apply(lambda row: calculate_t_2sided_pvalue(row['t_df'], row['t_loc'], row['t_scale'], row['qb_mean']), axis=1)
         gene_df['mode_st_p_value'] = gene_df.apply(lambda row: calculate_st_2sided_pvalue(row['st_df'], row['st_loc'], row['st_scale'], row['qb_mode']), axis=1)
         gene_df['mean_st_p_value'] = gene_df.apply(lambda row: calculate_st_2sided_pvalue(row['st_df_mean'], row['st_loc_mean'], row['st_scale_mean'], row['qb_mean']), axis=1)
 
-        # columns_to_drop = ['n_loc', 'n_scale','t_df','t_loc','t_scale','st_df','st_loc','st_scale']
         columns_to_drop = ['st_df','st_loc','st_scale','st_df_mean','st_loc_mean','st_scale_mean']
         gene_df = gene_df.drop(columns=columns_to_drop)
 
