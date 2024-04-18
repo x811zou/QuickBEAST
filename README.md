@@ -8,7 +8,7 @@ QuickBEAST is based on the same statistical model as [BEASTIE](https://github.co
 place holder
 ```
 
-### input format
+### Input format
 - Format: The data is presented in a tab-delimited text file without headers.
 - Fields:
   - geneID: Identifier for the gene.
@@ -22,13 +22,13 @@ geneID 3 ALT1_allele_count REF1_allele_count ALT2_allele_count REF3_allele_count
 ```
 
 ### Usage:
-##### run python wrapper script with test data to obtain p values
+##### Run python wrapper script with test data to obtain p values
 ```
 in_file = test_data/bimodal_genes
 out_qb_p_file = bimodal_genes_qb_p
 python ./calculate_p_value_from_qb_mode.py --disable-cache $in_file $out_qb_p_file
 ```
-##### run QuickBEAST directly with test data to obtain qb estimates
+##### Run QuickBEAST directly with test data to obtain qb estimates
 ```
 in_file = test_data/bimodal_genes
 out_qb_file = bimodal_genes_qb
