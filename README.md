@@ -1,7 +1,7 @@
 # QuickBEAST: A Comprehensive Tool for Estimating ASE Effect Size
 
 ### Overview
-QuickBEAST is based on the same statistical model as [BEASTIE](https://github.com/x811zou/BEASTIE), designed for fast application across large numbers of simulations. It estimates the binomial proportion `p` representing Allele-Specific Expression (ASE). The primary output, `qb_mode`, is the Maximum A Posteriori (MAP) effect size (mode of `p`) estimated via a subgrid search algorithm. Additionally, empirical p values are computed from 1000 null simulations for each gene. The ASE effect size (θ) is then calculated downstream using the relation (θ = `p`(1-`p`)), providing a precise quantification of the expression bias between alleles.
+QuickBEAST is based on the same statistical model as [BEASTIE](https://github.com/x811zou/BEASTIE), designed for fast application across large numbers of simulations. It estimates the binomial proportion `p` representing Allele-Specific Expression (ASE). The primary output, `qb_mode`, is the Maximum A Posteriori (MAP) effect size (mode of `p`) estimated via a subgrid search algorithm. Additionally, empirical p values are computed from 1000 null simulations for each gene. The ASE effect size (θ) is then calculated downstream using the relation (θ = `p`/(1-`p`)), providing a precise quantification of the expression bias between alleles.
 
 ### Build QuickBEAST
 ```
