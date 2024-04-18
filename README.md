@@ -5,7 +5,8 @@ QuickBEAST is based on the same statistical model as [BEASTIE](https://github.co
 
 ### Build QuickBEAST
 ```
-place holder
+apt-get install libgsl-dev
+make
 ```
 
 ### Input format
