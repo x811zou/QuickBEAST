@@ -17,8 +17,11 @@ QuickBEAST performs an in-depth statistical analysis to estimate the binomial pr
 ##### Usage:
 The software is designed with flexibility in mind, allowing users to specify various options such as the alpha and beta parameters for the beta distribution, the choice of output (mean, variance, mode), and the ability to fix the site with the largest number of heterozygous reads, among others.
 
-##### Conclusion:
-QuickBEAST stands out for its robust statistical foundation, precision in computation, and user-centric design. It is a powerful tool for researchers and geneticists aiming to unravel the complexities of allele-specific expression and its implications in genomic studies.
+##### Citing:
+Please cite this paper when using QuickBEAST for your publications.
+```
+place holder
+```
 
 ##### Acknowledgements:
-The initial version of QuickBEAST was developed by Bill (William H. Majoros). The current version has been enhanced and modified by myself, building upon Bill's original foundational work. We thank Bill Majoros for setting the high standards that continue to guide this project. For further information, inquiries, or contributions, please feel free to contact us: [Xue Zou](mailto:xz195@duke.edu), [William H. Majoros](mailto:bmajoros@alumni.duke.edu).
+The initial version of QuickBEAST was developed by Bill (William H. Majoros). The current version has been enhanced and modified by myself, building upon Bill's original foundational work. We thank Bill for setting the high standards that continue to guide this project. For further information, inquiries, or contributions, please feel free to contact us: [Xue Zou](mailto:xz195@duke.edu), [William H. Majoros](mailto:bmajoros@alumni.duke.edu).
