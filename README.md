@@ -9,9 +9,16 @@ QuickBEAST performs an in-depth statistical analysis to estimate the binomial pr
 git clone git@github.com:x811zou/QuickBEAST.git
 cd QuickBEAST/
 ```
-##### run python script with you specified input/output files
+##### run python wrapper script with test data to obtain p values
 ```
-python ./calculate_p_value_from_qb_mode.py --disable-cache $input_file $output_file
+in_file = test_data/bimodal_genes
+out_qb_file = test_data/bimodal_genes_qb
+out_qb_p_file = test_data/bimodal_genes_qb_p
+python ./calculate_p_value_from_qb_mode.py --disable-cache $in_file $out_qb_p_file
+```
+##### run QuickBEAST directly to obtain qb estimates
+```
+./QuickBEAST --alpha 8.789625 --beta 8.789625 --mean --mode -f $in_file --fixMaxHetSite > $out_qb_file
 ```
 
 ### Citing:
