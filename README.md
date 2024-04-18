@@ -5,7 +5,7 @@ QuickBEAST performs an in-depth statistical analysis to estimate the binomial pr
 
 ### Usage:
 ```
-
+python ./calculate_p_value_from_qb_mode.py --disable-cache $input_file $output_file
 ```
 
 ### Citing:
