@@ -79,7 +79,7 @@ def generate_fields(geneID, M, D, theta, switching_error = 0.05):
 
     return fields
 
-def run_qb_parallel(genes):
+def run_qb_parallel(executable_path, genes):
     parameter = 8.789625
 
     # prepare files
@@ -94,7 +94,7 @@ def run_qb_parallel(genes):
     
     #run qb
     try:
-        subprocess.run([f"./QuickBEAST --alpha {parameter} --beta {parameter} --mode -f {input_file_path} --fixMaxHetSite > {output_file_path}"], check=True, shell=True)
+        subprocess.run([f"{executable_path} --alpha {parameter} --beta {parameter} --mode -f {input_file_path} --fixMaxHetSite > {output_file_path}"], check=True, shell=True)
         # logging.info(f"QB for {input_file_path} executed successfully")
     except subprocess.CalledProcessError as e:
         logging.error(f"Error running QB for {input_file_path}: {e}")
@@ -123,7 +123,7 @@ def calculate_time(start_t, end_t):
     elapsed_time_formatted = str(timedelta(seconds=elapsed_time_seconds))
     return elapsed_time_formatted
 
-def simulate_null_genes(number_of_hets, average_read_depth_per_het, pi=0.05):
+def simulate_null_genes(qb_executable, number_of_hets, average_read_depth_per_het, pi=0.05):
     mode_parameter_fit_st = "PASSED"
     # SIMULATE GENE INPUTS
     simulated_genes = []
@@ -132,7 +132,7 @@ def simulate_null_genes(number_of_hets, average_read_depth_per_het, pi=0.05):
         simulated_genes.append(generate_fields(gene_id, M=number_of_hets, D=average_read_depth_per_het, theta=1, switching_error = pi))
 
     # RUN qb simulated genes 
-    simulated_gene_results = run_qb_parallel(simulated_genes)
+    simulated_gene_results = run_qb_parallel(qb_executable, simulated_genes)
     # compute summary statistics
     mode = simulated_gene_results["qb_mode"].tolist()
     # df: degrees of freedom
@@ -171,11 +171,11 @@ def manual_fitting(number_of_hets,average_read_depth_per_het,e,values):
     return st_df, st_loc, st_scale
         
 def simulate_null_genes_helper(args):
-    geneID, num_hets, total_count = args
-    n_hets, total_readepth, st_df, st_loc, st_scale, mode_fitting_para = simulate_null_genes(num_hets, int(total_count / num_hets))
+    executable_path, geneID, num_hets, total_count = args
+    n_hets, total_readepth, st_df, st_loc, st_scale, mode_fitting_para = simulate_null_genes(executable_path, num_hets, int(total_count / num_hets))
     return geneID, n_hets, total_readepth, st_df, st_loc, st_scale, mode_fitting_para
 
-def run_null_simulations(input_genes, disable_cache):
+def run_null_simulations(executable_path, input_genes, disable_cache):
     def cache_key(run):
         if disable_cache:
             return run[0]
@@ -187,7 +187,7 @@ def run_null_simulations(input_genes, disable_cache):
     simulation_start_t = time.time()
     with multiprocessing.Pool(12) as pool:
         all_runs = [(gene[0], gene[1], sum(gene[2:2+2*gene[1]])) for gene in input_genes]
-        unique_runs = set([(cache_key(r), r[1], r[2]) for r in all_runs])
+        unique_runs = set([(executable_path, cache_key(r), r[1], r[2]) for r in all_runs])
         logging.info(f"{datetime.now()} Starting {len(unique_runs)} unique gene simulation runs {len(all_runs)} total runs")
         for output in pool.imap_unordered(simulate_null_genes_helper, unique_runs):
             null_simulation_cache[output[0]] = output[1], output[2], output[3], output[4], output[5], output[6]
@@ -210,23 +210,7 @@ def run_null_simulations(input_genes, disable_cache):
 
     return null_simulation_df
 
-def main():
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument("input_file_path", help="Input file path")
-    argparser.add_argument("output_file_path", help="Output file path")
-    argparser.add_argument("--disable-cache", help="Disable caching of null simulations", action="store_true", default=False)
-    argparser.add_argument("--disable-null-simulation", help="Disable null simulations", action="store_true", default=False)
-    argparser.add_argument("--fix-phasing-error", help="fix phasing error to 5%", action="store_true", default=False)
-    args = argparser.parse_args()
-
-    input_file_path = args.input_file_path
-    output_file_path = args.output_file_path
-    disable_cache = args.disable_cache
-    disable_null_simulation = args.disable_null_simulation
-    fix_phasing_error = args.fix_phasing_error
-    start_t = time.time()
-
-    # step1: run qB on input genes
+def parse_gene_input_file(input_file_path, fix_phasing_error=False, default_pi=0.05):
     input_genes = []
     with open(input_file_path) as file:
         for line in file.readlines():
@@ -239,14 +223,11 @@ def main():
             pis = []
             if n_hets > 1:
                 pis = map(float, fields[n_hets*2+2 + 0:])
-                if len(fields) == n_hets*2+2:
-                    # generate pis for gene input
-                    pis = uniform(0.05, 0.05, n_hets-1)
             
-            pis = map(lambda x: 0.05 if x == -1 else x, pis)
+            pis = map(lambda x: default_pi if x == -1 else x, pis)
 
             if fix_phasing_error:
-                pis = map(lambda x: 0.05, pis)
+                pis = map(lambda x: default_pi, pis)
 
             gene = [
                 gene_id,
@@ -255,15 +236,37 @@ def main():
                 *pis
             ]
             input_genes.append(gene)
+    return input_genes
+
+def main():
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("input_file_path", help="Input file path")
+    argparser.add_argument("output_file_path", help="Output file path")
+    argparser.add_argument("--disable-cache", help="Disable caching of null simulations", action="store_true", default=False)
+    argparser.add_argument("--disable-null-simulation", help="Disable null simulations", action="store_true", default=False)
+    argparser.add_argument("--fix-phasing-error", help="fix phasing error to 5%", action="store_true", default=False)
+    args = argparser.parse_args()
+
+    executable_path = './QuickBEAST'
+
+    input_file_path = args.input_file_path
+    output_file_path = args.output_file_path
+    disable_cache = args.disable_cache
+    disable_null_simulation = args.disable_null_simulation
+    fix_phasing_error = args.fix_phasing_error
+    start_t = time.time()
+
+    # step1: run qB on input genes
+    input_genes = parse_gene_input_file(input_file_path, fix_phasing_error)
 
     logging.info(f"Going to run quickbeast on {len(input_genes)} genes")
-    gene_df = run_qb_parallel(input_genes)
+    gene_df = run_qb_parallel(executable_path, input_genes)
     qb_end_t = time.time()
     logging.info(f"Finished QB on input in ${calculate_time(start_t, qb_end_t)}")
 
     # step2: NULL simulation
     if not disable_null_simulation:
-        null_simulation_df = run_null_simulations(input_genes, disable_cache)
+        null_simulation_df = run_null_simulations(executable_path, input_genes, disable_cache)
         gene_df = pd.merge(gene_df, null_simulation_df, on="geneID")
 
         gene_df['mode_st_p_value'] = gene_df.apply(lambda row: calculate_st_2sided_pvalue(row['st_df'], row['st_loc'], row['st_scale'], row['qb_mode']), axis=1)
