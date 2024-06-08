@@ -55,7 +55,7 @@ def calculate_st_2sided_pvalue(a, loc, scale, sample_X):
     # Return the double-sided p-value
     return 2 * min(left_tail_p, right_tail_p)
 
-def generate_fields(geneID,M, D, theta,switching_error = 0.05):
+def generate_fields(geneID, M, D, theta, switching_error = 0.05):
     # calculate probability for binomial distribution
     p = theta / (1.0 + theta)
     # calculate alternative and reference read counts for each het
@@ -94,14 +94,14 @@ def run_qb_parallel(genes):
     
     #run qb
     try:
-        subprocess.run([f"./QuickBEAST --alpha {parameter} --beta {parameter} --mean --mode -f {input_file_path} --fixMaxHetSite > {output_file_path}"], check=True, shell=True)
+        subprocess.run([f"./QuickBEAST --alpha {parameter} --beta {parameter} --mode -f {input_file_path} --fixMaxHetSite > {output_file_path}"], check=True, shell=True)
         # logging.info(f"QB for {input_file_path} executed successfully")
     except subprocess.CalledProcessError as e:
         logging.error(f"Error running QB for {input_file_path}: {e}")
 
     #read and convert results
     qb = pd.read_csv(output_file_path, delimiter="\t", header=0)
-    qb.columns = ['geneID', 'qb_mean', 'qb_var', 'qb_mode']
+    qb.columns = ['geneID', 'qb_mode']
     # cleanup
     shutil.rmtree(temp_dir)
 
@@ -125,7 +125,6 @@ def calculate_time(start_t, end_t):
 
 def simulate_null_genes(number_of_hets, average_read_depth_per_het, pi=0.05):
     mode_parameter_fit_st = "PASSED"
-    mean_parameter_fit_st = "PASSED"
     # SIMULATE GENE INPUTS
     simulated_genes = []
     for i in range(1000):
@@ -136,7 +135,6 @@ def simulate_null_genes(number_of_hets, average_read_depth_per_het, pi=0.05):
     simulated_gene_results = run_qb_parallel(simulated_genes)
     # compute summary statistics
     mode = simulated_gene_results["qb_mode"].tolist()
-    mean = simulated_gene_results["qb_mean"].tolist()
     # df: degrees of freedom
     # loc: location
     # scale: scale of std
@@ -146,14 +144,8 @@ def simulate_null_genes(number_of_hets, average_read_depth_per_het, pi=0.05):
     except Exception as e:
         mode_parameter_fit_st = "FAILED"
         st_df_mode, st_loc_mode, st_scale_mode = manual_fitting(number_of_hets,average_read_depth_per_het,e,mode)
-    # mean
-    try:
-        st_df_mean, st_loc_mean, st_scale_mean = stats.skewnorm.fit(mean)
-    except Exception as e:
-        mean_parameter_fit_st = "FAILED"
-        st_df_mean, st_loc_mean, st_scale_mean = manual_fitting(number_of_hets,average_read_depth_per_het,e,mean)
-    
-    return number_of_hets, average_read_depth_per_het*number_of_hets, st_df_mode, st_loc_mode, st_scale_mode, mode_parameter_fit_st, st_df_mean, st_loc_mean, st_scale_mean, mean_parameter_fit_st
+
+    return number_of_hets, average_read_depth_per_het*number_of_hets, st_df_mode, st_loc_mode, st_scale_mode, mode_parameter_fit_st
 
 def manual_fitting(number_of_hets,average_read_depth_per_het,e,values):
     print(f"An error occurred during skewnorm fitting: {e}")
@@ -180,8 +172,8 @@ def manual_fitting(number_of_hets,average_read_depth_per_het,e,values):
         
 def simulate_null_genes_helper(args):
     geneID, num_hets, total_count = args
-    n_hets, total_readepth, st_df, st_loc, st_scale, mode_fitting_para, st_df_mean, st_loc_mean, st_scale_mean, mean_fitting_para = simulate_null_genes(num_hets, int(total_count / num_hets))
-    return geneID, n_hets, total_readepth, st_df, st_loc, st_scale, mode_fitting_para, st_df_mean, st_loc_mean, st_scale_mean, mean_fitting_para
+    n_hets, total_readepth, st_df, st_loc, st_scale, mode_fitting_para = simulate_null_genes(num_hets, int(total_count / num_hets))
+    return geneID, n_hets, total_readepth, st_df, st_loc, st_scale, mode_fitting_para
 
 def run_null_simulations(input_genes, disable_cache):
     def cache_key(run):
@@ -198,7 +190,7 @@ def run_null_simulations(input_genes, disable_cache):
         unique_runs = set([(cache_key(r), r[1], r[2]) for r in all_runs])
         logging.info(f"{datetime.now()} Starting {len(unique_runs)} unique gene simulation runs {len(all_runs)} total runs")
         for output in pool.imap_unordered(simulate_null_genes_helper, unique_runs):
-            null_simulation_cache[output[0]] = output[1], output[2], output[3], output[4], output[5], output[6],output[7], output[8], output[9], output[10]
+            null_simulation_cache[output[0]] = output[1], output[2], output[3], output[4], output[5], output[6]
 
             runs_completed += 1
             if runs_completed % 100 == 0:
@@ -208,10 +200,10 @@ def run_null_simulations(input_genes, disable_cache):
 
     for r in all_runs:
         key = cache_key(r)
-        n_hets, total_readepth, st_df, st_loc, st_scale, mode_fit_para, st_df_mean, st_loc_mean, st_scale_mean, mean_fit_para = null_simulation_cache[key]
-        null_simulation_data.append((r[0], n_hets, total_readepth, st_df, st_loc, st_scale, mode_fit_para, st_df_mean, st_loc_mean, st_scale_mean, mean_fit_para))
+        n_hets, total_readepth, st_df, st_loc, st_scale, mode_fit_para = null_simulation_cache[key]
+        null_simulation_data.append((r[0], n_hets, total_readepth, st_df, st_loc, st_scale, mode_fit_para))
 
-    null_simulation_df = pd.DataFrame(null_simulation_data, columns=['geneID', 'n_hets', 'total_count', 'st_df' ,'st_loc' ,'st_scale', 'mode_st_parameter_fit', 'st_df_mean' ,'st_loc_mean' ,'st_scale_mean','mean_st_parameter_fit'])
+    null_simulation_df = pd.DataFrame(null_simulation_data, columns=['geneID', 'n_hets', 'total_count', 'st_df' ,'st_loc' ,'st_scale', 'mode_st_parameter_fit'])
 
     simulation_end_t = time.time()
     logging.info(f"Finished simulations in ${calculate_time(simulation_start_t, simulation_end_t)}")
@@ -244,11 +236,8 @@ def main():
             n_hets = int(fields[1])
             counts = map(int, fields[2:(n_hets*2+2)])
 
-            unused = ''
             pis = []
             if n_hets > 1:
-                #unused = fields[n_hets*2+2]
-                #pis = map(float, fields[n_hets*2+2 + 1:])
                 pis = map(float, fields[n_hets*2+2 + 0:])
                 if len(fields) == n_hets*2+2:
                     # generate pis for gene input
@@ -269,7 +258,6 @@ def main():
 
     logging.info(f"Going to run quickbeast on {len(input_genes)} genes")
     gene_df = run_qb_parallel(input_genes)
-    gene_df = gene_df.dropna(subset=['qb_mean'])
     qb_end_t = time.time()
     logging.info(f"Finished QB on input in ${calculate_time(start_t, qb_end_t)}")
 
@@ -279,9 +267,8 @@ def main():
         gene_df = pd.merge(gene_df, null_simulation_df, on="geneID")
 
         gene_df['mode_st_p_value'] = gene_df.apply(lambda row: calculate_st_2sided_pvalue(row['st_df'], row['st_loc'], row['st_scale'], row['qb_mode']), axis=1)
-        gene_df['mean_st_p_value'] = gene_df.apply(lambda row: calculate_st_2sided_pvalue(row['st_df_mean'], row['st_loc_mean'], row['st_scale_mean'], row['qb_mean']), axis=1)
 
-        columns_to_drop = ['st_df','st_loc','st_scale','st_df_mean','st_loc_mean','st_scale_mean']
+        columns_to_drop = ['st_df','st_loc','st_scale']
         gene_df = gene_df.drop(columns=columns_to_drop)
 
     # Save the DataFrame as a TSV file
