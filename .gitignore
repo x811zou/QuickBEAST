@@ -5,3 +5,4 @@ QuickBEAST
 out*
 output_data/
 *.py
+__pycache__
