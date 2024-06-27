@@ -188,7 +188,7 @@ def run_null_simulations(executable_path, input_genes, disable_cache):
     with multiprocessing.Pool(12) as pool:
         all_runs = [(gene[0], gene[1], sum(gene[2:2+2*gene[1]])) for gene in input_genes]
         unique_runs = set([(executable_path, cache_key(r), r[1], r[2]) for r in all_runs])
-        logging.info(f"{datetime.now()} Starting {len(unique_runs)} unique gene simulation runs {len(all_runs)} total runs")
+        logging.info(f"....... Starting {len(unique_runs)} unique gene simulation runs {len(all_runs)} total runs: {datetime.now()}")
         for output in pool.imap_unordered(simulate_null_genes_helper, unique_runs):
             null_simulation_cache[output[0]] = output[1], output[2], output[3], output[4], output[5], output[6]
 
@@ -196,7 +196,7 @@ def run_null_simulations(executable_path, input_genes, disable_cache):
             if runs_completed % 100 == 0:
                 genes_per_second = runs_completed / (time.time() - simulation_start_t)
                 seconds_remaining = (len(unique_runs) - runs_completed) / genes_per_second
-                logging.info(f"{datetime.now()} Completed {runs_completed} gene simulations ({round(genes_per_second, 2)} genes/s) [ETA: {round(seconds_remaining, 1)}s]")
+                logging.info(f"....... Completed {runs_completed} gene simulations ({round(genes_per_second, 2)} genes/s) [ETA: {round(seconds_remaining, 1)}s]: {datetime.now()}")
 
     for r in all_runs:
         key = cache_key(r)
@@ -206,7 +206,7 @@ def run_null_simulations(executable_path, input_genes, disable_cache):
     null_simulation_df = pd.DataFrame(null_simulation_data, columns=['geneID', 'n_hets', 'total_count', 'st_df' ,'st_loc' ,'st_scale', 'mode_st_parameter_fit'])
 
     simulation_end_t = time.time()
-    logging.info(f"Finished simulations in ${calculate_time(simulation_start_t, simulation_end_t)}")
+    logging.info(f"....... Finished simulations in ${calculate_time(simulation_start_t, simulation_end_t)}")
 
     return null_simulation_df
 
@@ -216,7 +216,8 @@ def parse_gene_input_file(input_file_path, fix_phasing_error=False, default_pi=0
         for line in file.readlines():
             fields = line.strip().split("\t")
 
-            gene_id = format_geneID(fields[0])
+            # gene_id = format_geneID(fields[0])
+            gene_id = fields[0]
             n_hets = int(fields[1])
             counts = map(int, fields[2:(n_hets*2+2)])
 
@@ -270,7 +271,6 @@ def main():
         gene_df = pd.merge(gene_df, null_simulation_df, on="geneID")
 
         gene_df['mode_st_p_value'] = gene_df.apply(lambda row: calculate_st_2sided_pvalue(row['st_df'], row['st_loc'], row['st_scale'], row['qb_mode']), axis=1)
-
         columns_to_drop = ['st_df','st_loc','st_scale']
         gene_df = gene_df.drop(columns=columns_to_drop)
 
