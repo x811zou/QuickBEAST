@@ -33,7 +33,8 @@ out_qb_file = bimodal_genes_qb
 ### Citing:
 Please cite this paper when using QuickBEAST for your publications.
 ```
-[place holder]
+Zou, X., Gomez, Z. W., Reddy, T. E., Allen, A. S., Majoros, W. H. (2024). Bayesian Estimation of Allele-Specific
+Expression in the Presence of Phasing Uncertainty. bioRxiv, doi: 10.1101/2024.08.09.607371.
 ```
 
 ### Acknowledgements:
