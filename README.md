@@ -38,7 +38,7 @@ Expression in the Presence of Phasing Uncertainty. bioRxiv, doi: 10.1101/2024.08
 ```
 
 ### Acknowledgements:
-- Special thanks to William H. Majoros for their guidance and support.
+- Special thanks to William H. Majoros for his guidance and support.
 - Thanks to the Allen Lab for providing the resources and environment to develop QuickBEAST.
 
 
