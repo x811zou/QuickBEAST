@@ -1,7 +1,7 @@
 # QuickBEAST: A Comprehensive Tool for Estimating ASE Effect Size
 
 ### Overview
-QuickBEAST is based on the same statistical model as [BEASTIE](https://github.com/x811zou/BEASTIE), designed for fast application across large numbers of simulations. It estimates the binomial proportion `p` representing Allele-Specific Expression (ASE). The primary output, `qb_mode`, is the Maximum A Posteriori (MAP) effect size (mode of `p`) estimated via a subgrid search algorithm. Additionally, empirical p values are computed from 1000 null simulations for each gene. The ASE effect size (θ) is then calculated downstream using the relation (θ = `p`/(1-`p`)), providing a precise quantification of the expression bias between alleles.
+QuickBEAST is a robust and scalable Bayesian model for estimating allele-specific expression (ASE) from high-throughput sequencing data. The model is designed to handle complex population structures and varying sequencing depths, providing accurate ASE estimates even in the presence of phasing errors. It is used in [BEASTIE](https://github.com/x811zou/BEASTIE), designed for fast application across large numbers of simulations. It estimates the binomial proportion `p` representing Allele-Specific Expression (ASE). The primary output, `qb_mode`, is the Maximum A Posteriori (MAP) effect size (mode of `p`) estimated via a subgrid search algorithm. Additionally, empirical p values are computed from 1000 null simulations for each gene. The ASE effect size (θ) is then calculated downstream using the relation (θ = `p`/(1-`p`)), providing a precise quantification of the expression bias between alleles.
 
 ### Build QuickBEAST
 ```
@@ -38,4 +38,9 @@ Expression in the Presence of Phasing Uncertainty. bioRxiv, doi: 10.1101/2024.08
 ```
 
 ### Acknowledgements:
-The initial version of QuickBEAST was developed by Bill (William H. Majoros). The current version has been enhanced and modified by myself, building upon Bill's original foundational work. We thank Bill for setting the high standards that continue to guide this project. For further information, inquiries, or contributions, please feel free to contact [Xue Zou](mailto:xz195@duke.edu).
+- Special thanks to William H. Majoros for their guidance and support.
+- Thanks to the Allen Lab for providing the resources and environment to develop QuickBEAST.
+
+
+## Contact
+If you have any questions, feel free to reach out to me at [Xue Zou](mailto:xz195@duke.edu).
