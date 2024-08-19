@@ -22,7 +22,7 @@ geneID 2 ALT1_allele_count REF1_allele_count ALT2_allele_count REF2_allele_count
 geneID 3 ALT1_allele_count REF1_allele_count ALT2_allele_count REF3_allele_count ALT3_allele_count REF2_allele_count pi1 pi2
 ```
 
-### Usage:
+### Usage
 ##### Run QuickBEAST directly with test data to obtain qb estimates
 ```
 in_file = test_data/bimodal_genes
@@ -30,14 +30,14 @@ out_qb_file = bimodal_genes_qb
 ./QuickBEAST --alpha 8.789625 --beta 8.789625 --mean --mode -f $in_file --fixMaxHetSite > $out_qb_file
 ```
 
-### Citing:
+### Citing
 Please cite this paper when using QuickBEAST for your publications.
 ```
 Zou, X., Gomez, Z. W., Reddy, T. E., Allen, A. S., Majoros, W. H. (2024). Bayesian Estimation of Allele-Specific
 Expression in the Presence of Phasing Uncertainty. bioRxiv, doi: 10.1101/2024.08.09.607371.
 ```
 
-### Acknowledgements:
+### Acknowledgements
 - Special thanks to William H. Majoros for his guidance and support.
 - Thanks to the Allen Lab for providing the resources and environment to develop QuickBEAST.
 
